@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TimePick</title>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #d7e7fd, #e2f3f2);
+      margin: 0;
+      padding: 40px 0 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .language-switcher {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+    }
+
+    .language-switcher select {
+      padding: 5px 10px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background-color: #ffffff;
+      font-size: 14px;
+    }
+
+    h1 {
+      font-family: 'Baloo 2', cursive;
+      font-size: 60px;
+      margin-top: -20px;
+      margin-bottom: 10px;
+      color: #4c4c6d;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 700px;
+      background-color: #ffffff;
+      border-radius: 20px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+    }
+
+    .input-group, .time-select {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-weight: bold;
+      color: #374151;
+    }
+
+    input, select {
+      padding: 12px;
+      font-size: 16px;
+      width: 100%;
+      max-width: 300px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      background-color: #f8fafc;
+      color: #334155;
+    }
+
+    input::placeholder {
+      color: #94a3b8;
+    }
+
+    span {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #1f2937;
+      font-size: 16px;
+    }
+
+    .calendar-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border: 1px solid #e5e7eb;
+      padding: 10px;
+      border-radius: 12px;
+      background-color: #f9fafb;
+      width: 260px;
+      margin: 0 auto 20px;
+    }
+
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .calendar-header button {
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      color: #0b9bef;
+    }
+
+    .calendar-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+
+    .calendar-table th, .calendar-table td {
+      width: 30px;
+      height: 30px;
+      text-align: center;
+      border: 1px solid #e5e7eb;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .calendar-table td:hover {
+      background-color: #e0f2fe;
+    }
+
+    .selected {
+      background-color: #0b9bef !important;
+      color: white;
+    }
+
+    .confirm-button {
+      margin-top: 30px;
+      text-align: center;
+    }
+
+    #confirm-btn {
+      padding: 12px 24px;
+      font-size: 16px;
+      background-color: #0b9bef;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    #confirm-btn:hover {
+      background-color: #0284c7;
+    }
+  </style>
+</head>
+<body>
+
+<div class="language-switcher">
+  <select id="language-select">
+    <option value="en">English</option>
+    <option value="zh">繁體中文</option>
+  </select>
+</div>
+
+<h1>TIMEPICK</h1>
+
+<div class="container">
+  <div class="input-group">
+    <label for="timetable-name" id="label-timetable">1. Timetable Name:</label>
+    <input type="text" id="timetable-name" placeholder="Enter name">
+  </div>
+
+  <div>
+    <span id="label-time">2. Select Available Time:</span>
+    <div class="time-select">
+      <label for="available-time" id="label-from">From:</label>
+      <select id="available-time"></select>
+      <label for="end-time" id="label-to">To:</label>
+      <select id="end-time"></select>
+    </div>
+  </div>
+
+  <div>
+    <span id="label-date">3. Select Dates:</span>
+    <div class="calendar-container" id="calendar"></div>
+  </div>
+
+  <div class="confirm-button">
+    <button id="confirm-btn">Confirm</button>
+  </div>
+</div>
+
+<script>
+  const translations = {
+    en: {
+      timetable: "1. Timetable Name:",
+      timeSelect: "2. Select Available Time:",
+      from: "From:",
+      to: "To:",
+      dateSelect: "3. Select Dates:",
+      confirm: "Confirm",
+      placeholder: "Enter name"
+    },
+    zh: {
+      timetable: "1. 時間表名稱：",
+      timeSelect: "2. 選擇可用時間：",
+      from: "從：",
+      to: "到：",
+      dateSelect: "3. 選擇日期：",
+      confirm: "確認",
+      placeholder: "輸入名稱"
+    }
+  };
+
+  function updateLanguage(lang) {
+    const t = translations[lang];
+    document.getElementById("label-timetable").textContent = t.timetable;
+    document.getElementById("label-time").textContent = t.timeSelect;
+    document.getElementById("label-from").textContent = t.from;
+    document.getElementById("label-to").textContent = t.to;
+    document.getElementById("label-date").textContent = t.dateSelect;
+    document.getElementById("confirm-btn").textContent = t.confirm;
+    document.getElementById("timetable-name").placeholder = t.placeholder;
+  }
+
+  document.getElementById("language-select").addEventListener("change", function () {
+    updateLanguage(this.value);
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    updateLanguage("en");
+
+    const selectedDates = new Set();
+
+    function populateTimeOptions() {
+      let options = [];
+      for (let i = 0; i < 24; i++) {
+        let time = i.toString().padStart(2, '0') + ":00";
+        options.push(`<option value="${time}">${time}</option>`);
+      }
+      document.getElementById("available-time").innerHTML = options.join('');
+      document.getElementById("end-time").innerHTML = options.join('');
+    }
+
+    function generateCalendar(elementId, year, month) {
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const firstDay = new Date(year, month, 1).getDay();
+
+      let calendarHTML = `<div class="calendar-header">
+          <button onclick="changeMonth('${elementId}', -1)">◀</button>
+          <span>${new Date(year, month).toLocaleString('default', { month: 'long' })} ${year}</span>
+          <button onclick="changeMonth('${elementId}', 1)">▶</button>
+        </div>
+        <table class="calendar-table">
+          <thead>
+            <tr><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr>
+          </thead>
+          <tbody><tr>`;
+
+      for (let i = 0; i < firstDay; i++) {
+        calendarHTML += "<td></td>";
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${month + 1}-${day}`;
+        const isSelected = selectedDates.has(dateStr);
+        calendarHTML += `<td class="date-cell ${isSelected ? 'selected' : ''}" data-date="${dateStr}">${day}</td>`;
+        if ((firstDay + day) % 7 === 0) {
+          calendarHTML += "</tr><tr>";
+        }
+      }
+
+      calendarHTML += "</tr></tbody></table>";
+      const el = document.getElementById(elementId);
+      el.innerHTML = calendarHTML;
+      el.dataset.currentDate = `${year}-${month}`;
+      addDateListeners(el);
+    }
+
+    function addDateListeners(container) {
+      container.querySelectorAll(".date-cell").forEach(cell => {
+        cell.addEventListener("click", function () {
+          const date = this.dataset.date;
+          if (selectedDates.has(date)) {
+            selectedDates.delete(date);
+            this.classList.remove("selected");
+          } else {
+            selectedDates.add(date);
+            this.classList.add("selected");
+          }
+        });
+      });
+    }
+
+    window.changeMonth = function (elementId, direction) {
+      let [year, month] = document.getElementById(elementId).dataset.currentDate.split('-').map(Number);
+      let newMonth = month + direction;
+      if (newMonth < 0) {
+        year -= 1;
+        newMonth = 11;
+      } else if (newMonth > 11) {
+        year += 1;
+        newMonth = 0;
+      }
+      generateCalendar(elementId, year, newMonth);
+    };
+
+    populateTimeOptions();
+    const year = new Date().getFullYear();
+    const month = new Date().getMonth();
+    generateCalendar("calendar", year, month);
+  });
+</script>
+</body>
+</html>
