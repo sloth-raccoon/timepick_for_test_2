@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timetable Planner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #bbdefb;
+        }
+        .layout {
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar-toggle {
+            position: absolute;
+            top: 20px;
+            left: 10px;
+            z-index: 100;
+        }
+        .sidebar {
+            width: 250px;
+            transition: width 0.3s ease;
+            background: #ffffff;
+            padding: 20px;
+            overflow: auto;
+            border-right: 1px solid #90caf9;
+        }
+        .sidebar.collapsed {
+            width: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .main {
+            flex: 1;
+            transition: margin-left 0.3s ease;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background-color: #64b5f6;
+            color: white;
+            border-radius: 8px;
+        }
+        .button {
+            background: #42a5f5;
+            border: 2px solid #1e88e5;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 16px;
+            color: white;
+        }
+        .button:hover {
+            background: #1e88e5;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+        }
+        .box {
+            flex: 1;
+            border: 2px solid #64b5f6;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #64b5f6;
+            text-align: center;
+            padding: 5px;
+            cursor: pointer;
+            user-select: none;
+            font-size: 14px;
+        }
+        th {
+            background-color: #e3f2fd;
+            color: #1e88e5;
+        }
+        td {
+            background-color: #e3f2fd;
+        }
+        .legend {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .color-box {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+        }
+        input, select {
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 5px;
+            border: 1px solid #bbdefb;
+        }
+        ul {
+            max-height: 100px;
+            overflow-y: auto;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <button class="button sidebar-toggle" onclick="toggleSidebar()">☰</button>
+    <div class="layout">
+        <div class="sidebar" id="sidebar">
+            <h3>Schedule Settings</h3>
+            <label>
+                Timetable Name:<br>
+                <input type="text" id="timetable-name" placeholder="e.g. Study Group">
+            </label>
+            <label>
+                Add Participant:<br>
+                <input type="text" id="participant-name" placeholder="Name">
+                <button class="button" onclick="addParticipant()">Add</button>
+            </label>
+            <ul id="participant-list"></ul>
+            <label>
+                Start Time:<br>
+                <select id="start-time"></select>
+            </label>
+            <label>
+                End Time:<br>
+                <select id="end-time"></select>
+            </label>
+            <button class="button" onclick="populateTables()">Set Time Range</button>
+            <button class="button" onclick="resetAll()">Reset All</button>
+        </div>
+
+        <div class="main" id="main">
+            <div class="header">
+                <div>
+                    <button class="button" onclick="location.reload()">New</button>
+                    <button class="button" onclick="saveSchedule()">Save</button>
+                </div>
+                <select>
+                    <option>English</option>
+                    <option>繁體中文</option>
+                </select>
+            </div>
+            <div class="container">
+                <div class="box">
+                    <h3>My Time</h3>
+                    <div class="legend">
+                        <div class="color-box" style="background-color: white; border: 1px solid #ccc;"></div> None
+                        <div class="color-box" style="background-color: #42a5f5;"></div> Available
+                        <div class="color-box" style="background-color: #f44336;"></div> Unavailable
+                    </div>
+                    <table id="your-table">
+                        <thead>
+                            <tr><th>Time</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div class="box">
+                    <h3>Group Availability</h3>
+                    <div class="legend">
+                        <div class="color-box" style="background-color: #e0f7fa;"></div> 1/5
+                        <div class="color-box" style="background-color: #b2ebf2;"></div> 2/5
+                        <div class="color-box" style="background-color: #80deea;"></div> 3/5
+                        <div class="color-box" style="background-color: #4dd0e1;"></div> 4/5
+                        <div class="color-box" style="background-color: #26c6da;"></div> 5/5
+                    </div>
+                    <p><span id="group-status">0/5 Fully Available</span></p>
+                    <table id="group-table">
+                        <thead>
+                            <tr><th>Time</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isDragging = false;
+        const groupMax = 5;
+
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('collapsed');
+        }
+
+        function fillTimeOptions() {
+            const startSel = document.getElementById('start-time');
+            const endSel = document.getElementById('end-time');
+            for (let i = 8; i <= 21; i++) {
+                const timeStr = i.toString().padStart(2, '0') + ':00';
+                const opt1 = new Option(timeStr, i);
+                const opt2 = new Option(timeStr, i);
+                startSel.add(opt1);
+                endSel.add(opt2);
+            }
+            startSel.value = 13;
+            endSel.value = 21;
+        }
+
+        function createRows(start, end) {
+            const times = [];
+            for (let i = start; i <= end; i++) {
+                times.push(i.toString().padStart(2, '0') + ':00');
+            }
+            return times;
+        }
+
+        function populateTables() {
+            document.querySelector('#your-table tbody').innerHTML = '';
+            document.querySelector('#group-table tbody').innerHTML = '';
+
+            const start = parseInt(document.getElementById('start-time').value);
+            const end = parseInt(document.getElementById('end-time').value);
+            const times = createRows(start, end);
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const yourBody = document.querySelector('#your-table tbody');
+            const groupBody = document.querySelector('#group-table tbody');
+
+            times.forEach(time => {
+                const row = document.createElement('tr');
+                const groupRow = document.createElement('tr');
+
+                const timeCell = document.createElement('td');
+                timeCell.textContent = time;
+                const groupTimeCell = timeCell.cloneNode(true);
+
+                row.appendChild(timeCell);
+                groupRow.appendChild(groupTimeCell);
+
+                days.forEach(() => {
+                    const td = document.createElement('td');
+                    td.style.backgroundColor = '#e0e0e0';
+                    const groupTd = document.createElement('td');
+                    groupTd.dataset.count = "0";
+                    groupTd.style.backgroundColor = '#e0e0e0';
+                    row.appendChild(td);
+                    groupRow.appendChild(groupTd);
+                });
+
+                yourBody.appendChild(row);
+                groupBody.appendChild(groupRow);
+            });
+            setupYourTableInteraction();
+            setupGroupTableInteraction();
+        }
+
+        function setupYourTableInteraction() {
+            const cells = document.querySelectorAll('#your-table td');
+            cells.forEach(cell => {
+                cell.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    toggleYourCell(cell);
+                    e.preventDefault();
+                });
+                cell.addEventListener('mouseover', () => {
+                    if (isDragging) toggleYourCell(cell);
+                });
+            });
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+        }
+
+        function toggleYourCell(cell) {
+            const current = cell.style.backgroundColor;
+            if (current === 'rgb(66, 165, 245)') {
+                cell.style.backgroundColor = 'rgb(244, 67, 54)';
+            } else if (current === 'rgb(244, 67, 54)') {
+                cell.style.backgroundColor = '#e0e0e0';
+            } else {
+                cell.style.backgroundColor = 'rgb(66, 165, 245)';
+            }
+        }
+
+        function setupGroupTableInteraction() {
+            const cells = document.querySelectorAll('#group-table td');
+            cells.forEach(cell => {
+                cell.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    toggleGroupCell(cell);
+                    e.preventDefault();
+                });
+                cell.addEventListener('mouseover', () => {
+                    if (isDragging) toggleGroupCell(cell);
+                });
+            });
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+        }
+
+        function toggleGroupCell(cell) {
+            let count = parseInt(cell.dataset.count);
+            count = (count + 1) % (groupMax + 1);
+            cell.dataset.count = count;
+            const colors = ['#e0e0e0', '#e0f7fa', '#b2ebf2', '#80deea', '#4dd0e1', '#26c6da'];
+            cell.style.backgroundColor = colors[count];
+            updateGroupStatus();
+        }
+
+        function updateGroupStatus() {
+            let filled = 0;
+            document.querySelectorAll('#group-table td').forEach(cell => {
+                if (parseInt(cell.dataset.count) === groupMax) filled++;
+            });
+            document.getElementById('group-status').textContent = `${filled}/${document.querySelectorAll('#group-table td').length} Fully Available`;
+        }
+
+        function addParticipant() {
+            const nameInput = document.getElementById('participant-name');
+            const name = nameInput.value.trim();
+            if (name) {
+                const li = document.createElement('li');
+                li.textContent = name;
+                document.getElementById('participant-list').appendChild(li);
+                nameInput.value = '';
+            }
+        }
+
+        function resetAll() {
+            document.querySelectorAll('#your-table td').forEach(cell => cell.style.backgroundColor = '#e0e0e0');
+            document.querySelectorAll('#group-table td').forEach(cell => {
+                cell.dataset.count = 0;
+                cell.style.backgroundColor = '#e0e0e0';
+            });
+            document.getElementById('group-status').textContent = '0/5 Fully Available';
+        }
+
+        function saveSchedule() {
+            const timetableName = document.getElementById('timetable-name').value;
+            const participants = Array.from(document.querySelectorAll('#participant-list li')).map(li => li.textContent);
+            const yourData = Array.from(document.querySelectorAll('#your-table tr')).map(row => Array.from(row.cells).map(cell => cell.style.backgroundColor));
+            const groupData = Array.from(document.querySelectorAll('#group-table tr')).map(row => Array.from(row.cells).map(cell => cell.dataset.count));
+            const result = {
+                name: timetableName,
+                participants: participants,
+                yourAvailability: yourData,
+                groupAvailability: groupData
+            };
+            console.log("Saved Data:", result);
+            alert("Schedule saved to console!");
+        }
+
+        fillTimeOptions();
+        populateTables();
+    </script>
+</body>
+</html>
