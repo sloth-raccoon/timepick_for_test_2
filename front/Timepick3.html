@@ -5,141 +5,274 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Timetable Planner</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Import Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
+            /* Updated font and background */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
-            background-color: #bbdefb;
+            background: linear-gradient(135deg, #d7e7fd, #e2f3f2); /* Example gradient from signin */
+            min-height: 100vh; /* Ensure gradient covers full height */
         }
         .layout {
             display: flex;
             height: 100vh;
+            padding-top: 60px; /* Add padding to avoid overlap with fixed elements */
+            box-sizing: border-box;
         }
         .sidebar-toggle {
-            position: absolute;
+            position: fixed; /* Changed to fixed */
             top: 20px;
-            left: 10px;
-            z-index: 100;
+            left: 20px;
+            z-index: 1001; /* Ensure it's above sidebar */
+            /* Updated button style */
+            background-color: #0b9bef;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px; /* Larger icon */
+            transition: background-color 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        .sidebar-toggle:hover {
+            background-color: #0284c7;
         }
         .sidebar {
             width: 250px;
-            transition: width 0.3s ease;
-            background: #ffffff;
+            transition: width 0.3s ease, padding 0.3s ease;
+            background: #ffffff; /* White background */
             padding: 20px;
             overflow: auto;
-            border-right: 1px solid #90caf9;
+            border-right: 1px solid #cbd5e1; /* Softer border */
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+            height: calc(100vh - 60px); /* Adjust height considering layout padding */
+            position: fixed; /* Make sidebar fixed */
+            left: 0;
+            top: 60px; /* Position below potential header space */
+            z-index: 1000;
         }
         .sidebar.collapsed {
             width: 0;
             padding: 0;
             overflow: hidden;
+            border-right: none;
         }
         .main {
             flex: 1;
             transition: margin-left 0.3s ease;
             padding: 20px;
+            margin-left: 270px; /* Initial margin for sidebar */
+        }
+        .sidebar.collapsed + .main {
+            margin-left: 20px; /* Adjust margin when sidebar is collapsed */
         }
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 10px 20px;
-            background-color: #64b5f6;
-            color: white;
-            border-radius: 8px;
+            /* Removed background, let main content area handle it or make it white */
+            background-color: #ffffff;
+            color: #4c4c6d; /* Darker text color */
+            border-radius: 12px; /* Consistent rounding */
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
         }
+        /* General Button Style */
         .button {
-            background: #42a5f5;
-            border: 2px solid #1e88e5;
-            padding: 5px 10px;
-            cursor: pointer;
-            font-size: 16px;
+            background-color: #0b9bef; /* Consistent button color */
             color: white;
+            border: none;
+            padding: 10px 15px; /* Adjusted padding */
+            cursor: pointer;
+            font-size: 14px; /* Slightly smaller font */
+            border-radius: 8px; /* Consistent rounding */
+            transition: background-color 0.3s ease;
+            margin: 5px; /* Add some margin */
         }
         .button:hover {
-            background: #1e88e5;
+            background-color: #0284c7; /* Consistent hover */
+        }
+        /* Specific button adjustments if needed */
+        .sidebar .button {
+            width: calc(100% - 10px); /* Full width in sidebar */
+            margin-top: 10px;
         }
         .container {
             display: flex;
             gap: 20px;
             background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+            padding: 25px; /* Slightly more padding */
+            border-radius: 16px; /* Consistent rounding */
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08); /* Consistent shadow */
+            flex-wrap: wrap; /* Allow wrapping on smaller screens */
         }
         .box {
             flex: 1;
-            border: 2px solid #64b5f6;
-            padding: 10px;
-            border-radius: 5px;
+            min-width: 300px; /* Minimum width for responsiveness */
+            border: 1px solid #e5e7eb; /* Softer border */
+            padding: 15px;
+            border-radius: 12px; /* Consistent rounding */
+            background-color: #f9fafb; /* Light background for contrast */
         }
+        /* Updated Table Styles */
         table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 15px; /* Space above table */
         }
         th, td {
-            border: 1px solid #64b5f6;
+            border: 1px solid #e5e7eb; /* Lighter border */
             text-align: center;
-            padding: 5px;
+            padding: 8px 5px; /* Adjusted padding */
             cursor: pointer;
             user-select: none;
-            font-size: 14px;
+            font-size: 12px; /* Smaller font for table */
+            height: 30px; /* Fixed height */
+            min-width: 35px; /* Minimum width */
         }
         th {
-            background-color: #e3f2fd;
-            color: #1e88e5;
+            background-color: #f8fafc; /* Light header background */
+            color: #374151; /* Darker text */
+            font-weight: bold;
         }
         td {
-            background-color: #e3f2fd;
+            background-color: #ffffff; /* White cell background */
+            transition: background-color 0.2s ease;
         }
+        td:hover {
+             background-color: #e0f2fe; /* Hover effect like calendar */
+        }
+        /* Style for time column cells */
+        #your-table td:first-child,
+        #group-table td:first-child {
+            background-color: #f8fafc;
+            font-weight: bold;
+            color: #374151;
+            cursor: default;
+        }
+
+        /* Updated Legend Styles */
         .legend {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 5px 15px; /* Adjust gap */
             margin-top: 10px;
             flex-wrap: wrap;
+            font-size: 12px; /* Smaller legend font */
+            color: #6b7280; /* Softer text color */
         }
         .color-box {
-            width: 20px;
-            height: 20px;
+            width: 15px; /* Smaller box */
+            height: 15px;
             display: inline-block;
+            border-radius: 3px; /* Slightly rounded */
+            vertical-align: middle;
+            margin-right: 3px;
         }
-        input, select {
+        /* Input and Select Styles */
+        input[type="text"], select {
             width: 100%;
-            margin-bottom: 10px;
-            padding: 5px;
-            border: 1px solid #bbdefb;
+            max-width: 100%; /* Ensure it fits sidebar */
+            box-sizing: border-box; /* Include padding in width */
+            margin-bottom: 15px; /* More space */
+            padding: 10px; /* Adjusted padding */
+            border: 1px solid #cbd5e1; /* Consistent border */
+            border-radius: 8px; /* Consistent rounding */
+            font-size: 14px; /* Consistent font size */
+            background-color: #f8fafc; /* Consistent background */
+            color: #333;
+        }
+        input::placeholder {
+            color: #94a3b8; /* Consistent placeholder color */
+        }
+        label {
+            font-weight: bold;
+            color: #374151; /* Consistent label color */
+            font-size: 14px;
+            display: block; /* Ensure label takes full width */
+            margin-bottom: 5px;
+        }
+        h3 {
+            /* Use Baloo 2 or Segoe UI */
+            /* font-family: 'Baloo 2', cursive; */ /* Optional: Use Baloo for headers */
+            font-size: 20px; /* Adjusted size */
+            color: #4c4c6d; /* Consistent header color */
+            margin-top: 0;
+            margin-bottom: 15px;
         }
         ul {
-            max-height: 100px;
+            max-height: 120px; /* Increased height */
             overflow-y: auto;
-            padding-left: 20px;
+            padding-left: 0; /* Remove default padding */
+            list-style: none; /* Remove bullets */
+            margin-top: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #e5e7eb; /* Add border */
+            border-radius: 8px;
         }
+        ul li {
+            padding: 8px 10px;
+            font-size: 14px;
+            color: #374151;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        ul li:last-child {
+            border-bottom: none;
+        }
+        /* Language Switcher Style (from signin.html) */
+        .language-switcher select {
+             padding: 5px 10px;
+             border-radius: 8px;
+             border: 1px solid #cbd5e1;
+             background-color: #ffffff;
+             font-size: 14px;
+        }
+        /* Group Availability Colors (adjust if needed) */
+        .group-color-0 { background-color: #ffffff; } /* None */
+        .group-color-1 { background-color: #e0f7fa; } /* Lightest Blue/Cyan */
+        .group-color-2 { background-color: #b2ebf2; }
+        .group-color-3 { background-color: #80deea; }
+        .group-color-4 { background-color: #4dd0e1; }
+        .group-color-5 { background-color: #26c6da; } /* Darkest Blue/Cyan */
+
+        /* Your Time Colors */
+        .your-time-none { background-color: #ffffff; } /* None */
+        .your-time-available { background-color: #60a5fa; } /* Available - Adjusted Blue */
+        .your-time-unavailable { background-color: #fca5a5; } /* Unavailable - Softer Red */
+
+        #group-status {
+            font-weight: bold;
+            color: #374151;
+        }
+
     </style>
 </head>
 <body>
+    <!-- Moved Toggle Button outside layout for fixed positioning -->
     <button class="button sidebar-toggle" onclick="toggleSidebar()">☰</button>
+
     <div class="layout">
         <div class="sidebar" id="sidebar">
             <h3>Schedule Settings</h3>
-            <label>
-                Timetable Name:<br>
-                <input type="text" id="timetable-name" placeholder="e.g. Study Group">
-            </label>
-            <label>
-                Add Participant:<br>
-                <input type="text" id="participant-name" placeholder="Name">
-                <button class="button" onclick="addParticipant()">Add</button>
-            </label>
+            <label for="timetable-name">Timetable Name:</label>
+            <input type="text" id="timetable-name" placeholder="e.g. Study Group">
+
+            <label for="participant-name">Add Participant:</label>
+            <input type="text" id="participant-name" placeholder="Name">
+            <button class="button" onclick="addParticipant()">Add</button>
+
             <ul id="participant-list"></ul>
-            <label>
-                Start Time:<br>
-                <select id="start-time"></select>
-            </label>
-            <label>
-                End Time:<br>
-                <select id="end-time"></select>
-            </label>
+
+            <label for="start-time">Start Time:</label>
+            <select id="start-time"></select>
+
+            <label for="end-time">End Time:</label>
+            <select id="end-time"></select>
+
             <button class="button" onclick="populateTables()">Set Time Range</button>
             <button class="button" onclick="resetAll()">Reset All</button>
         </div>
@@ -147,44 +280,49 @@
         <div class="main" id="main">
             <div class="header">
                 <div>
+                    <!-- Consider icons or different styling if needed -->
                     <button class="button" onclick="location.reload()">New</button>
                     <button class="button" onclick="saveSchedule()">Save</button>
                 </div>
-                <select>
-                    <option>English</option>
-                    <option>繁體中文</option>
-                </select>
+                <!-- Apply consistent language switcher style -->
+                <div class="language-switcher">
+                    <select id="language-select">
+                        <option value="en">English</option>
+                        <option value="zh">繁體中文</option>
+                    </select>
+                </div>
             </div>
             <div class="container">
                 <div class="box">
                     <h3>My Time</h3>
                     <div class="legend">
-                        <div class="color-box" style="background-color: white; border: 1px solid #ccc;"></div> None
-                        <div class="color-box" style="background-color: #42a5f5;"></div> Available
-                        <div class="color-box" style="background-color: #f44336;"></div> Unavailable
+                        <div class="color-box your-time-none" style="border: 1px solid #ccc;"></div> None
+                        <div class="color-box your-time-available"></div> Available
+                        <div class="color-box your-time-unavailable"></div> Unavailable
                     </div>
                     <table id="your-table">
                         <thead>
                             <tr><th>Time</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr>
                         </thead>
-                        <tbody></tbody>
+                        <tbody><!-- Populated by JS --></tbody>
                     </table>
                 </div>
                 <div class="box">
                     <h3>Group Availability</h3>
                     <div class="legend">
-                        <div class="color-box" style="background-color: #e0f7fa;"></div> 1/5
-                        <div class="color-box" style="background-color: #b2ebf2;"></div> 2/5
-                        <div class="color-box" style="background-color: #80deea;"></div> 3/5
-                        <div class="color-box" style="background-color: #4dd0e1;"></div> 4/5
-                        <div class="color-box" style="background-color: #26c6da;"></div> 5/5
+                        <!-- Updated legend colors -->
+                        <div class="color-box group-color-1"></div> 1/5
+                        <div class="color-box group-color-2"></div> 2/5
+                        <div class="color-box group-color-3"></div> 3/5
+                        <div class="color-box group-color-4"></div> 4/5
+                        <div class="color-box group-color-5"></div> 5/5
                     </div>
                     <p><span id="group-status">0/5 Fully Available</span></p>
                     <table id="group-table">
                         <thead>
                             <tr><th>Time</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr>
                         </thead>
-                        <tbody></tbody>
+                        <tbody><!-- Populated by JS --></tbody>
                     </table>
                 </div>
             </div>
@@ -193,28 +331,70 @@
 
     <script>
         let isDragging = false;
-        const groupMax = 5;
+        let currentDragState = null; // To manage drag state (available/unavailable/none)
+        const groupMax = 5; // Assuming 5 participants max for group colors
+
+        // --- DOM Elements ---
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('main');
+        const startTimeSelect = document.getElementById('start-time');
+        const endTimeSelect = document.getElementById('end-time');
+        const yourTableBody = document.querySelector('#your-table tbody');
+        const groupTableBody = document.querySelector('#group-table tbody');
+        const participantList = document.getElementById('participant-list');
+        const participantNameInput = document.getElementById('participant-name');
+        const groupStatusSpan = document.getElementById('group-status');
+        const timetableNameInput = document.getElementById('timetable-name');
+
+        // --- Constants for Styles ---
+        // Defined in CSS, access via class names
+        const YOUR_TIME_CLASSES = {
+            none: 'your-time-none',
+            available: 'your-time-available',
+            unavailable: 'your-time-unavailable'
+        };
+        const GROUP_COLOR_CLASSES = [
+            'group-color-0', 'group-color-1', 'group-color-2',
+            'group-color-3', 'group-color-4', 'group-color-5'
+        ];
+
+        // --- Functions ---
 
         function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('collapsed');
+            sidebar.classList.toggle('collapsed');
+            // Adjust main content margin based on sidebar state
+            if (sidebar.classList.contains('collapsed')) {
+                mainContent.style.marginLeft = '20px'; // Or your preferred collapsed margin
+            } else {
+                mainContent.style.marginLeft = '270px'; // Width + padding/border
+            }
         }
 
         function fillTimeOptions() {
-            const startSel = document.getElementById('start-time');
-            const endSel = document.getElementById('end-time');
-            for (let i = 8; i <= 21; i++) {
-                const timeStr = i.toString().padStart(2, '0') + ':00';
+            // Clear existing options first
+            startTimeSelect.innerHTML = '';
+            endTimeSelect.innerHTML = '';
+            for (let i = 0; i < 24; i++) { // Use 0-23 for full day
+                const hour = i.toString().padStart(2, '0');
+                const timeStr = `${hour}:00`;
+                // Use hour value for easier comparison
                 const opt1 = new Option(timeStr, i);
                 const opt2 = new Option(timeStr, i);
-                startSel.add(opt1);
-                endSel.add(opt2);
+                startTimeSelect.add(opt1);
+                endTimeSelect.add(opt2);
             }
-            startSel.value = 13;
-            endSel.value = 21;
+            // Set default values (e.g., 9 AM to 5 PM)
+            startTimeSelect.value = 9;
+            endTimeSelect.value = 17;
         }
 
         function createRows(start, end) {
             const times = [];
+            // Ensure start is less than end
+            if (start >= end) {
+                console.warn("Start time must be before end time.");
+                return times; // Return empty array or handle error
+            }
             for (let i = start; i <= end; i++) {
                 times.push(i.toString().padStart(2, '0') + ':00');
             }
@@ -222,143 +402,306 @@
         }
 
         function populateTables() {
-            document.querySelector('#your-table tbody').innerHTML = '';
-            document.querySelector('#group-table tbody').innerHTML = '';
+            yourTableBody.innerHTML = '';
+            groupTableBody.innerHTML = '';
 
-            const start = parseInt(document.getElementById('start-time').value);
-            const end = parseInt(document.getElementById('end-time').value);
+            const start = parseInt(startTimeSelect.value);
+            const end = parseInt(endTimeSelect.value);
+
+            if (isNaN(start) || isNaN(end) || start >= end) {
+                 alert("Please select a valid time range (Start time must be before End time).");
+                 return;
+            }
+
             const times = createRows(start, end);
-            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-            const yourBody = document.querySelector('#your-table tbody');
-            const groupBody = document.querySelector('#group-table tbody');
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; // Match header
 
-            times.forEach(time => {
+            times.forEach((time, timeIndex) => {
                 const row = document.createElement('tr');
                 const groupRow = document.createElement('tr');
 
+                // Time cell (non-interactive)
                 const timeCell = document.createElement('td');
                 timeCell.textContent = time;
+                timeCell.classList.add('time-header-cell'); // Add class for styling if needed
                 const groupTimeCell = timeCell.cloneNode(true);
 
                 row.appendChild(timeCell);
                 groupRow.appendChild(groupTimeCell);
 
-                days.forEach(() => {
+                // Day cells
+                days.forEach((day, dayIndex) => {
+                    // Your Time Cell
                     const td = document.createElement('td');
-                    td.style.backgroundColor = '#e0e0e0';
-                    const groupTd = document.createElement('td');
-                    groupTd.dataset.count = "0";
-                    groupTd.style.backgroundColor = '#e0e0e0';
+                    td.classList.add(YOUR_TIME_CLASSES.none); // Default state
+                    td.dataset.time = time;
+                    td.dataset.day = day;
                     row.appendChild(td);
+
+                    // Group Time Cell
+                    const groupTd = document.createElement('td');
+                    groupTd.classList.add(GROUP_COLOR_CLASSES[0]); // Default count 0
+                    groupTd.dataset.count = "0";
+                    groupTd.dataset.time = time;
+                    groupTd.dataset.day = day;
                     groupRow.appendChild(groupTd);
                 });
 
-                yourBody.appendChild(row);
-                groupBody.appendChild(groupRow);
+                yourTableBody.appendChild(row);
+                groupTableBody.appendChild(groupRow);
             });
-            setupYourTableInteraction();
-            setupGroupTableInteraction();
+
+            setupTableInteraction('#your-table', handleYourCellInteraction);
+            setupTableInteraction('#group-table', handleGroupCellInteraction);
+            updateGroupStatus(); // Initial status update
         }
 
-        function setupYourTableInteraction() {
-            const cells = document.querySelectorAll('#your-table td');
-            cells.forEach(cell => {
-                cell.addEventListener('mousedown', (e) => {
+        function setupTableInteraction(tableSelector, cellHandler) {
+            const table = document.querySelector(tableSelector);
+            if (!table) return;
+
+            // Use event delegation on the table body
+            const tbody = table.querySelector('tbody');
+            if (!tbody) return;
+
+            tbody.addEventListener('mousedown', (e) => {
+                // Target only data cells (TD), not the time header cell
+                if (e.target.tagName === 'TD' && e.target.cellIndex > 0) {
                     isDragging = true;
-                    toggleYourCell(cell);
-                    e.preventDefault();
-                });
-                cell.addEventListener('mouseover', () => {
-                    if (isDragging) toggleYourCell(cell);
-                });
+                    currentDragState = cellHandler(e.target, 'mousedown'); // Handle click and get initial state for drag
+                    e.preventDefault(); // Prevent text selection
+                }
             });
+
+            tbody.addEventListener('mouseover', (e) => {
+                if (isDragging && e.target.tagName === 'TD' && e.target.cellIndex > 0) {
+                    cellHandler(e.target, 'mouseover', currentDragState); // Apply dragged state
+                }
+            });
+
+            // Stop dragging on mouseup anywhere in the document
             document.addEventListener('mouseup', () => {
-                isDragging = false;
+                if (isDragging) {
+                    isDragging = false;
+                    currentDragState = null;
+                }
+            }, { once: false }); // Ensure listener is added correctly
+
+             // Handle touch events for mobile
+            tbody.addEventListener('touchstart', (e) => {
+                if (e.target.tagName === 'TD' && e.target.cellIndex > 0) {
+                    isDragging = true;
+                    currentDragState = cellHandler(e.target, 'mousedown'); // Treat touchstart like mousedown
+                    // Don't prevent default here if you want scrolling, handle in touchmove
+                }
+            });
+
+            tbody.addEventListener('touchmove', (e) => {
+                if (isDragging) {
+                     // Prevent scrolling while dragging within the table
+                    e.preventDefault();
+                    const touch = e.touches[0];
+                    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+                    if (element && element.tagName === 'TD' && element.closest(tableSelector) && element.cellIndex > 0) {
+                         cellHandler(element, 'mouseover', currentDragState);
+                    }
+                }
+            });
+
+            document.addEventListener('touchend', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    currentDragState = null;
+                }
             });
         }
 
-        function toggleYourCell(cell) {
-            const current = cell.style.backgroundColor;
-            if (current === 'rgb(66, 165, 245)') {
-                cell.style.backgroundColor = 'rgb(244, 67, 54)';
-            } else if (current === 'rgb(244, 67, 54)') {
-                cell.style.backgroundColor = '#e0e0e0';
-            } else {
-                cell.style.backgroundColor = 'rgb(66, 165, 245)';
+
+        // Handler for "My Time" table cells
+        function handleYourCellInteraction(cell, eventType, dragState) {
+            const states = [YOUR_TIME_CLASSES.none, YOUR_TIME_CLASSES.available, YOUR_TIME_CLASSES.unavailable];
+            let currentStateIndex = states.findIndex(cls => cell.classList.contains(cls));
+            if (currentStateIndex === -1) currentStateIndex = 0; // Default to none if no class found
+
+            let nextStateIndex;
+            let nextStateClass;
+
+            if (eventType === 'mousedown') {
+                // Cycle through states on click: none -> available -> unavailable -> none
+                nextStateIndex = (currentStateIndex + 1) % states.length;
+                nextStateClass = states[nextStateIndex];
+                // Update cell class
+                cell.classList.remove(...states);
+                cell.classList.add(nextStateClass);
+                return nextStateClass; // Return the new state for dragging
+            } else if (eventType === 'mouseover' && dragState) {
+                // Apply the state determined by the initial mousedown during drag
+                if (!cell.classList.contains(dragState)) {
+                    cell.classList.remove(...states);
+                    cell.classList.add(dragState);
+                }
+                return dragState; // Continue dragging with the same state
             }
+             return states[currentStateIndex]; // Return current state if no change
         }
 
-        function setupGroupTableInteraction() {
-            const cells = document.querySelectorAll('#group-table td');
-            cells.forEach(cell => {
-                cell.addEventListener('mousedown', (e) => {
-                    isDragging = true;
-                    toggleGroupCell(cell);
-                    e.preventDefault();
-                });
-                cell.addEventListener('mouseover', () => {
-                    if (isDragging) toggleGroupCell(cell);
-                });
-            });
-            document.addEventListener('mouseup', () => {
-                isDragging = false;
-            });
+
+        // Handler for "Group Availability" table cells
+        function handleGroupCellInteraction(cell, eventType, dragState) {
+             let currentCount = parseInt(cell.dataset.count) || 0;
+             let nextCount;
+
+             if (eventType === 'mousedown') {
+                 // Cycle count on click: 0 -> 1 -> ... -> max -> 0
+                 nextCount = (currentCount + 1) % (groupMax + 1);
+                 cell.dataset.count = nextCount;
+                 // Update class based on count
+                 cell.classList.remove(...GROUP_COLOR_CLASSES);
+                 cell.classList.add(GROUP_COLOR_CLASSES[nextCount]);
+                 updateGroupStatus();
+                 return nextCount; // Return the new count for dragging
+             } else if (eventType === 'mouseover' && dragState !== null) {
+                 // Apply the count determined by the initial mousedown during drag
+                 const dragCount = parseInt(dragState);
+                 if (currentCount !== dragCount) {
+                     cell.dataset.count = dragCount;
+                     cell.classList.remove(...GROUP_COLOR_CLASSES);
+                     cell.classList.add(GROUP_COLOR_CLASSES[dragCount]);
+                     updateGroupStatus();
+                 }
+                 return dragCount; // Continue dragging with the same count
+             }
+             return currentCount; // Return current count if no change
         }
 
-        function toggleGroupCell(cell) {
-            let count = parseInt(cell.dataset.count);
-            count = (count + 1) % (groupMax + 1);
-            cell.dataset.count = count;
-            const colors = ['#e0e0e0', '#e0f7fa', '#b2ebf2', '#80deea', '#4dd0e1', '#26c6da'];
-            cell.style.backgroundColor = colors[count];
-            updateGroupStatus();
-        }
 
         function updateGroupStatus() {
-            let filled = 0;
-            document.querySelectorAll('#group-table td').forEach(cell => {
-                if (parseInt(cell.dataset.count) === groupMax) filled++;
+            let fullyAvailableCount = 0;
+            const groupCells = groupTableBody.querySelectorAll('td[data-count]'); // Select only data cells
+            const totalCells = groupCells.length;
+
+            groupCells.forEach(cell => {
+                if (parseInt(cell.dataset.count) === groupMax) {
+                    fullyAvailableCount++;
+                }
             });
-            document.getElementById('group-status').textContent = `${filled}/${document.querySelectorAll('#group-table td').length} Fully Available`;
+
+            // Update the status text
+            groupStatusSpan.textContent = `${fullyAvailableCount}/${totalCells} Fully Available`;
         }
 
         function addParticipant() {
-            const nameInput = document.getElementById('participant-name');
-            const name = nameInput.value.trim();
+            const name = participantNameInput.value.trim();
             if (name) {
+                // Check if participant already exists (optional)
+                const existing = Array.from(participantList.querySelectorAll('li')).some(li => li.textContent === name);
+                if (existing) {
+                    alert(`${name} is already in the list.`);
+                    return;
+                }
+
                 const li = document.createElement('li');
                 li.textContent = name;
-                document.getElementById('participant-list').appendChild(li);
-                nameInput.value = '';
+                // Optional: Add a remove button
+                const removeBtn = document.createElement('button');
+                removeBtn.textContent = '×'; // Simple remove symbol
+                removeBtn.style.marginLeft = '10px';
+                removeBtn.style.cursor = 'pointer';
+                removeBtn.style.border = 'none';
+                removeBtn.style.background = 'none';
+                removeBtn.style.color = 'red';
+                removeBtn.onclick = () => li.remove();
+                li.appendChild(removeBtn);
+
+                participantList.appendChild(li);
+                participantNameInput.value = ''; // Clear input
+            } else {
+                alert("Please enter a participant name.");
             }
         }
 
         function resetAll() {
-            document.querySelectorAll('#your-table td').forEach(cell => cell.style.backgroundColor = '#e0e0e0');
-            document.querySelectorAll('#group-table td').forEach(cell => {
-                cell.dataset.count = 0;
-                cell.style.backgroundColor = '#e0e0e0';
-            });
-            document.getElementById('group-status').textContent = '0/5 Fully Available';
+             // Reset "My Time" table
+             yourTableBody.querySelectorAll('td').forEach(cell => {
+                 if (cell.cellIndex > 0) { // Skip time header cell
+                     cell.classList.remove(...Object.values(YOUR_TIME_CLASSES));
+                     cell.classList.add(YOUR_TIME_CLASSES.none);
+                 }
+             });
+
+             // Reset "Group Availability" table
+             groupTableBody.querySelectorAll('td').forEach(cell => {
+                 if (cell.cellIndex > 0) { // Skip time header cell
+                     cell.dataset.count = 0;
+                     cell.classList.remove(...GROUP_COLOR_CLASSES);
+                     cell.classList.add(GROUP_COLOR_CLASSES[0]);
+                 }
+             });
+
+             updateGroupStatus(); // Reset status text
+             console.log("Tables reset.");
         }
 
         function saveSchedule() {
-            const timetableName = document.getElementById('timetable-name').value;
-            const participants = Array.from(document.querySelectorAll('#participant-list li')).map(li => li.textContent);
-            const yourData = Array.from(document.querySelectorAll('#your-table tr')).map(row => Array.from(row.cells).map(cell => cell.style.backgroundColor));
-            const groupData = Array.from(document.querySelectorAll('#group-table tr')).map(row => Array.from(row.cells).map(cell => cell.dataset.count));
+            const timetableName = timetableNameInput.value.trim() || "Untitled Schedule";
+            const participants = Array.from(participantList.querySelectorAll('li')).map(li => li.textContent.replace('×', '').trim()); // Remove the '×' if present
+
+            const getTableData = (tableBody, dataExtractor) => {
+                return Array.from(tableBody.querySelectorAll('tr')).map(row => {
+                    // Map cells starting from the second cell (index 1)
+                    return Array.from(row.cells).slice(1).map(dataExtractor);
+                });
+            };
+
+            // Extract state based on class for "My Time"
+            const yourData = getTableData(yourTableBody, cell => {
+                 if (cell.classList.contains(YOUR_TIME_CLASSES.available)) return 'available';
+                 if (cell.classList.contains(YOUR_TIME_CLASSES.unavailable)) return 'unavailable';
+                 return 'none';
+            });
+
+            // Extract count for "Group Availability"
+            const groupData = getTableData(groupTableBody, cell => parseInt(cell.dataset.count) || 0);
+
+            // Get time labels
+            const timeLabels = Array.from(yourTableBody.querySelectorAll('tr')).map(row => row.cells[0].textContent);
+
             const result = {
                 name: timetableName,
                 participants: participants,
+                timeLabels: timeLabels, // Include time labels for context
                 yourAvailability: yourData,
-                groupAvailability: groupData
+                groupAvailability: groupData,
+                startTime: startTimeSelect.options[startTimeSelect.selectedIndex].text,
+                endTime: endTimeSelect.options[endTimeSelect.selectedIndex].text
             };
-            console.log("Saved Data:", result);
-            alert("Schedule saved to console!");
+
+            console.log("Saved Data:", JSON.stringify(result, null, 2)); // Pretty print JSON
+            alert(`Schedule "${timetableName}" saved! Check the browser console for details.`);
+
+            // Here you would typically send 'result' to a backend server
+            // fetch('/api/save-schedule', {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify(result)
+            // })
+            // .then(response => response.json())
+            // .then(data => console.log('Save successful:', data))
+            // .catch(error => console.error('Error saving schedule:', error));
         }
 
-        fillTimeOptions();
-        populateTables();
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            fillTimeOptions();
+            populateTables(); // Initial population
+            // Set initial main content margin based on sidebar visibility
+            if (sidebar.classList.contains('collapsed')) {
+                 mainContent.style.marginLeft = '20px';
+            } else {
+                 mainContent.style.marginLeft = '270px';
+            }
+        });
+
     </script>
 </body>
 </html>
